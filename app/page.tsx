@@ -1,20 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { supabase } from '../lib/supabaseClient';
-
-type StorageLocation = 'pantry' | 'refrigerator' | 'freezer';
-
-type InventoryItem = {
-  id: string;
-  name: string;
-  quantity: number | null;
-  unit: string | null;
-  storage_location: StorageLocation;
-  category: string;
-  expiration_date: string | null;
-  note: string | null;
-};
+import {
+  fetchInventory as fetchInventoryItems,
+  insertInventoryItem,
+  updateInventoryItem,
+  deleteInventoryItem,
+} from '../lib/inventory';
+import type { InventoryItem, StorageLocation } from '../src/types/inventory';
 
 export default function Home() {
   const [name, setName] = useState('');
@@ -53,19 +46,14 @@ export default function Home() {
     setInventoryLoading(true);
     setInventoryError('');
 
-    const { data, error } = await supabase
-      .from('inventory_items')
-      .select(
-        'id, name, quantity, unit, storage_location, category, expiration_date, note'
-      )
-      .order('name', { ascending: true });
+    const { data, error } = await fetchInventoryItems();
 
     if (error) {
       console.error(error);
       setInventoryError(`Failed to load inventory: ${error.message}`);
       setInventoryItems([]);
     } else {
-      setInventoryItems((data ?? []) as InventoryItem[]);
+      setInventoryItems(data ?? []);
     }
 
     setInventoryLoading(false);
@@ -88,10 +76,7 @@ export default function Home() {
     setDeletingId(itemId);
 
     try {
-      const { error } = await supabase
-        .from('inventory_items')
-        .delete()
-        .eq('id', itemId);
+      const { error } = await deleteInventoryItem(itemId);
 
       if (error) {
         throw error;
@@ -145,22 +130,15 @@ export default function Home() {
     setEditLoading(true);
 
     try {
-      const { data, error } = await supabase
-        .from('inventory_items')
-        .update({
-          name: editName.trim(),
-          quantity: editQuantity ? Number(editQuantity) : null,
-          unit: editUnit.trim() || null,
-          storage_location: editStorageLocation,
-          category: editCategory.trim(),
-          expiration_date: editExpirationDate || null,
-          note: editNote.trim() || null,
-        })
-        .eq('id', itemId)
-        .select(
-          'id, name, quantity, unit, storage_location, category, expiration_date, note'
-        )
-        .single();
+      const { data, error } = await updateInventoryItem(itemId, {
+        name: editName.trim(),
+        quantity: editQuantity ? Number(editQuantity) : null,
+        unit: editUnit.trim() || null,
+        storage_location: editStorageLocation,
+        category: editCategory.trim(),
+        expiration_date: editExpirationDate || null,
+        note: editNote.trim() || null,
+      });
 
       if (error) {
         throw error;
@@ -168,7 +146,7 @@ export default function Home() {
 
       setInventoryItems((items) =>
         items.map((item) =>
-          item.id === itemId ? (data as InventoryItem) : item
+          item.id === itemId ? data : item
         )
       );
 
@@ -214,9 +192,7 @@ export default function Home() {
     };
 
     try {
-      const { error } = await supabase
-        .from('inventory_items')
-        .insert(data);
+      const { error } = await insertInventoryItem(data);
 
       if (error) {
         throw error;

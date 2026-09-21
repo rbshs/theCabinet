@@ -8,8 +8,8 @@ export interface InventoryItem {
   name: string;
   quantity: number | null;
   unit: string | null;
-  storageLocation: StorageLocation;
+  storage_location: StorageLocation;
   category: string;
-  expirationDate: string | null;
+  expiration_date: string | null;
   note: string | null;
 }
