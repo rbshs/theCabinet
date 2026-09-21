@@ -34,6 +34,9 @@ export default function Home() {
   const [inventoryLoading, setInventoryLoading] = useState(true);
   const [inventoryError, setInventoryError] = useState('');
 
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState('');
+
   async function fetchInventory() {
     setInventoryLoading(true);
     setInventoryError('');
@@ -59,6 +62,43 @@ export default function Home() {
   useEffect(() => {
     fetchInventory();
   }, []);
+
+  async function handleDelete(itemId: string) {
+    const confirmed = window.confirm(
+      'Are you sure you want to delete this item?'
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setDeleteError('');
+    setDeletingId(itemId);
+
+    try {
+      const { error } = await supabase
+        .from('inventory_items')
+        .delete()
+        .eq('id', itemId);
+
+      if (error) {
+        throw error;
+      }
+
+      setInventoryItems((currentItems) =>
+        currentItems.filter((item) => item.id !== itemId)
+      );
+    } catch (err) {
+      console.error(err);
+      setDeleteError(
+        err instanceof Error
+          ? `Failed to delete food item: ${err.message}`
+          : 'Failed to delete food item.'
+      );
+    } finally {
+      setDeletingId(null);
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -285,6 +325,12 @@ export default function Home() {
         <section className="mt-10">
           <h2 className="text-2xl font-semibold">Inventory</h2>
 
+          {deleteError && (
+            <div className="mt-4 rounded-md border border-red-300 bg-red-50 p-3 text-red-700">
+              {deleteError}
+            </div>
+          )}
+
           {inventoryLoading && (
             <p className="mt-4 text-gray-600">Loading inventory...</p>
           )}
@@ -312,41 +358,54 @@ export default function Home() {
                     key={item.id}
                     className="rounded-md border border-gray-300 p-4"
                   >
-                    <h3 className="text-lg font-semibold">{item.name}</h3>
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <h3 className="text-lg font-semibold">{item.name}</h3>
 
-                    <div className="mt-2 space-y-1 text-sm text-gray-700">
-                      {(item.quantity !== null || item.unit) && (
-                        <p>
-                          <span className="font-medium">Quantity:</span>{' '}
-                          {item.quantity !== null ? item.quantity : ''}
-                          {item.quantity !== null && item.unit ? ' ' : ''}
-                          {item.unit ?? ''}
-                        </p>
-                      )}
+                        <div className="mt-2 space-y-1 text-sm text-gray-700">
+                          {(item.quantity !== null || item.unit) && (
+                            <p>
+                              <span className="font-medium">Quantity:</span>{' '}
+                              {item.quantity !== null ? item.quantity : ''}
+                              {item.quantity !== null && item.unit ? ' ' : ''}
+                              {item.unit ?? ''}
+                            </p>
+                          )}
 
-                      <p>
-                        <span className="font-medium">Storage:</span>{' '}
-                        {item.storage_location}
-                      </p>
+                          <p>
+                            <span className="font-medium">Storage:</span>{' '}
+                            {item.storage_location}
+                          </p>
 
-                      <p>
-                        <span className="font-medium">Category:</span>{' '}
-                        {item.category}
-                      </p>
+                          <p>
+                            <span className="font-medium">Category:</span>{' '}
+                            {item.category}
+                          </p>
 
-                      {item.expiration_date && (
-                        <p>
-                          <span className="font-medium">Expiration:</span>{' '}
-                          {item.expiration_date}
-                        </p>
-                      )}
+                          {item.expiration_date && (
+                            <p>
+                              <span className="font-medium">Expiration:</span>{' '}
+                              {item.expiration_date}
+                            </p>
+                          )}
 
-                      {item.note && (
-                        <p>
-                          <span className="font-medium">Note:</span>{' '}
-                          {item.note}
-                        </p>
-                      )}
+                          {item.note && (
+                            <p>
+                              <span className="font-medium">Note:</span>{' '}
+                              {item.note}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(item.id)}
+                        disabled={deletingId === item.id}
+                        className="rounded-md border border-red-300 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {deletingId === item.id ? 'Deleting...' : 'Delete'}
+                      </button>
                     </div>
                   </div>
                 ))}
