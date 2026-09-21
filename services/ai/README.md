@@ -3,7 +3,8 @@
 `llamaCppProvider` in `llamaCpp.ts` implements `MealSuggestionProvider`.
 Import it only from server-side code. The `server-only` marker prevents importing
 it into a Next.js client component. The shared types in `index.ts` stay provider-independent.
-There is no UI or API route connected to the adapter yet.
+`POST /api/ai/suggest-meals` connects the adapter to current Supabase inventory.
+There is no UI connected to this endpoint yet.
 
 Set `AI_SERVICE_ENDPOINT` in `.env.local` to the confirmed server base URL,
 `http://127.0.0.1:8080`, without `/v1` or a completion path. No API key is required.
@@ -50,3 +51,34 @@ It makes no Supabase calls and does not modify inventory. Review the suggestion 
 relevance and ensure it does not assume a known quantity. The script uses the existing
 TypeScript compiler and Next.js server marker to run the adapter in Node; no runner
 dependency is installed. This checks the adapter, not a user-facing application flow.
+
+## Real inventory endpoint
+
+Send JSON containing `userRequest` to `POST /api/ai/suggest-meals`.
+The route calls `fetchInventory()` from `lib/inventory.ts` for every request and
+copies all eight inventory context fields without changing IDs or null quantities.
+Client-supplied inventory is ignored. The route passes this context and the trimmed
+request to `llamaCppProvider` through `MealSuggestionProvider`.
+The adapter validates response structure and inventory references; the route also
+checks returned IDs against the fetched inventory before returning the response.
+
+Success returns `{ "suggestions": [...] }`. Empty inventory returns
+`{ "suggestions": [] }` without calling the model. Invalid JSON or a missing/blank
+request returns 400, an inventory retrieval failure returns 500, and a provider
+failure or invalid suggestion returns 502. Responses are not cached and do not
+include raw database or provider errors. This endpoint only reads inventory.
+
+Run `node --test tests/suggestMealsRoute.test.cjs tests/llamaCpp.test.cjs` for
+isolated tests that do not need Supabase or llama.cpp running.
+
+For a real inventory test, start the Q8_0 server and the application (`npm.cmd run dev`),
+confirm the active model alias as above, then call the application URL shown by Next.js:
+
+```powershell
+$body = @{ userRequest = 'What should I make for dinner?' } | ConvertTo-Json
+Invoke-RestMethod -Uri 'http://localhost:3000/api/ai/suggest-meals' -Method Post -ContentType 'application/json' -Body $body
+```
+
+Use the actual application port if it differs from 3000. The application needs its
+existing Supabase configuration and `AI_SERVICE_ENDPOINT` configured. Review the
+returned suggestions against your inventory; no records are added, edited, or deleted.
