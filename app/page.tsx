@@ -1,15 +1,22 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 
 type StorageLocation = 'pantry' | 'refrigerator' | 'freezer';
 
+type InventoryItem = {
+  id: string;
+  name: string;
+  quantity: number | null;
+  unit: string | null;
+  storage_location: StorageLocation;
+  category: string;
+  expiration_date: string | null;
+  note: string | null;
+};
+
 export default function Home() {
-  console.log(
-  'SUPABASE ENV:',
-  process.env.NEXT_PUBLIC_SUPABASE_URL ? 'SET' : 'MISSING'
-);
   const [name, setName] = useState('');
   const [quantity, setQuantity] = useState('');
   const [unit, setUnit] = useState('');
@@ -22,6 +29,36 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+
+  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
+  const [inventoryLoading, setInventoryLoading] = useState(true);
+  const [inventoryError, setInventoryError] = useState('');
+
+  async function fetchInventory() {
+    setInventoryLoading(true);
+    setInventoryError('');
+
+    const { data, error } = await supabase
+      .from('inventory_items')
+      .select(
+        'id, name, quantity, unit, storage_location, category, expiration_date, note'
+      )
+      .order('name', { ascending: true });
+
+    if (error) {
+      console.error(error);
+      setInventoryError(`Failed to load inventory: ${error.message}`);
+      setInventoryItems([]);
+    } else {
+      setInventoryItems((data ?? []) as InventoryItem[]);
+    }
+
+    setInventoryLoading(false);
+  }
+
+  useEffect(() => {
+    fetchInventory();
+  }, []);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -69,6 +106,8 @@ export default function Home() {
       setCategory('');
       setExpirationDate('');
       setNote('');
+
+      await fetchInventory();
     } catch (err) {
       console.error(err);
       setError(
@@ -241,6 +280,78 @@ export default function Home() {
               </button>
             </div>
           </form>
+        </section>
+
+        <section className="mt-10">
+          <h2 className="text-2xl font-semibold">Inventory</h2>
+
+          {inventoryLoading && (
+            <p className="mt-4 text-gray-600">Loading inventory...</p>
+          )}
+
+          {inventoryError && (
+            <div className="mt-4 rounded-md border border-red-300 bg-red-50 p-3 text-red-700">
+              {inventoryError}
+            </div>
+          )}
+
+          {!inventoryLoading &&
+            !inventoryError &&
+            inventoryItems.length === 0 && (
+              <p className="mt-4 text-gray-600">
+                No food items have been added yet.
+              </p>
+            )}
+
+          {!inventoryLoading &&
+            !inventoryError &&
+            inventoryItems.length > 0 && (
+              <div className="mt-4 space-y-4">
+                {inventoryItems.map((item) => (
+                  <div
+                    key={item.id}
+                    className="rounded-md border border-gray-300 p-4"
+                  >
+                    <h3 className="text-lg font-semibold">{item.name}</h3>
+
+                    <div className="mt-2 space-y-1 text-sm text-gray-700">
+                      {(item.quantity !== null || item.unit) && (
+                        <p>
+                          <span className="font-medium">Quantity:</span>{' '}
+                          {item.quantity !== null ? item.quantity : ''}
+                          {item.quantity !== null && item.unit ? ' ' : ''}
+                          {item.unit ?? ''}
+                        </p>
+                      )}
+
+                      <p>
+                        <span className="font-medium">Storage:</span>{' '}
+                        {item.storage_location}
+                      </p>
+
+                      <p>
+                        <span className="font-medium">Category:</span>{' '}
+                        {item.category}
+                      </p>
+
+                      {item.expiration_date && (
+                        <p>
+                          <span className="font-medium">Expiration:</span>{' '}
+                          {item.expiration_date}
+                        </p>
+                      )}
+
+                      {item.note && (
+                        <p>
+                          <span className="font-medium">Note:</span>{' '}
+                          {item.note}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
         </section>
       </div>
     </main>
