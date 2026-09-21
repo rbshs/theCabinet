@@ -26,6 +26,20 @@ export default function Home() {
   const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
   const [inventoryLoading, setInventoryLoading] = useState(true);
   const [inventoryError, setInventoryError] = useState('');
+  const [search, setSearch] = useState('');
+  const [storageFilter, setStorageFilter] = useState<StorageLocation | ''>('');
+  const [categoryFilter, setCategoryFilter] = useState('');
+
+  const categories = Array.from(new Set([
+    ...inventoryItems.map((item) => item.category),
+    ...(categoryFilter ? [categoryFilter] : []),
+  ]));
+  const searchTerm = search.trim().toLowerCase();
+  const filteredInventoryItems = inventoryItems.filter((item) =>
+    item.name.toLowerCase().includes(searchTerm) &&
+    (!storageFilter || item.storage_location === storageFilter) &&
+    (!categoryFilter || item.category === categoryFilter)
+  );
 
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState('');
@@ -386,6 +400,65 @@ export default function Home() {
         <section className="mt-10">
           <h2 className="text-2xl font-semibold">Inventory</h2>
 
+          <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div>
+              <label htmlFor="inventorySearch" className="mb-1 block text-sm font-medium">
+                Search food names
+              </label>
+              <input
+                id="inventorySearch"
+                type="search"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search by name..."
+                className="w-full rounded-md border border-gray-300 px-3 py-2"
+              />
+            </div>
+            <div>
+              <label htmlFor="storageFilter" className="mb-1 block text-sm font-medium">
+                Filter by storage
+              </label>
+              <select
+                id="storageFilter"
+                value={storageFilter}
+                onChange={(e) => setStorageFilter(e.target.value as StorageLocation | '')}
+                className="w-full rounded-md border border-gray-300 px-3 py-2"
+              >
+                <option value="">All locations</option>
+                <option value="pantry">Pantry</option>
+                <option value="refrigerator">Refrigerator</option>
+                <option value="freezer">Freezer</option>
+              </select>
+            </div>
+            <div>
+              <label htmlFor="categoryFilter" className="mb-1 block text-sm font-medium">
+                Filter by category
+              </label>
+              <select
+                id="categoryFilter"
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value)}
+                className="w-full rounded-md border border-gray-300 px-3 py-2"
+              >
+                <option value="">All categories</option>
+                {categories.map((category) => (
+                  <option key={category} value={category}>{category}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setSearch('');
+              setStorageFilter('');
+              setCategoryFilter('');
+            }}
+            className="mt-4 rounded-md border border-gray-300 px-3 py-2 text-sm font-medium hover:bg-gray-50"
+          >
+            Clear filters
+          </button>
+
           {deleteError && (
             <div className="mt-4 rounded-md border border-red-300 bg-red-50 p-3 text-red-700">
               {deleteError}
@@ -412,9 +485,18 @@ export default function Home() {
 
           {!inventoryLoading &&
             !inventoryError &&
-            inventoryItems.length > 0 && (
+            inventoryItems.length > 0 &&
+            filteredInventoryItems.length === 0 && (
+              <p className="mt-4 text-gray-600">
+                No food items match your filters.
+              </p>
+            )}
+
+          {!inventoryLoading &&
+            !inventoryError &&
+            filteredInventoryItems.length > 0 && (
               <div className="mt-4 space-y-4">
-                {inventoryItems.map((item) => (
+                {filteredInventoryItems.map((item) => (
                   <div
                     key={item.id}
                     className="rounded-md border border-gray-300 p-4"
