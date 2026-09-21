@@ -37,6 +37,18 @@ export default function Home() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState('');
 
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editQuantity, setEditQuantity] = useState('');
+  const [editUnit, setEditUnit] = useState('');
+  const [editStorageLocation, setEditStorageLocation] =
+    useState<StorageLocation>('pantry');
+  const [editCategory, setEditCategory] = useState('');
+  const [editExpirationDate, setEditExpirationDate] = useState('');
+  const [editNote, setEditNote] = useState('');
+  const [editLoading, setEditLoading] = useState(false);
+  const [editError, setEditError] = useState('');
+
   async function fetchInventory() {
     setInventoryLoading(true);
     setInventoryError('');
@@ -97,6 +109,79 @@ export default function Home() {
       );
     } finally {
       setDeletingId(null);
+    }
+  }
+
+  function startEditing(item: InventoryItem) {
+    setEditingId(item.id);
+    setEditName(item.name);
+    setEditQuantity(item.quantity !== null ? String(item.quantity) : '');
+    setEditUnit(item.unit ?? '');
+    setEditStorageLocation(item.storage_location);
+    setEditCategory(item.category);
+    setEditExpirationDate(item.expiration_date ?? '');
+    setEditNote(item.note ?? '');
+    setEditError('');
+  }
+
+  function cancelEditing() {
+    setEditingId(null);
+    setEditError('');
+  }
+
+  async function handleUpdate(itemId: string) {
+    setEditError('');
+
+    if (!editName.trim()) {
+      setEditError('Name is required.');
+      return;
+    }
+
+    if (!editCategory.trim()) {
+      setEditError('Category is required.');
+      return;
+    }
+
+    setEditLoading(true);
+
+    try {
+      const { data, error } = await supabase
+        .from('inventory_items')
+        .update({
+          name: editName.trim(),
+          quantity: editQuantity ? Number(editQuantity) : null,
+          unit: editUnit.trim() || null,
+          storage_location: editStorageLocation,
+          category: editCategory.trim(),
+          expiration_date: editExpirationDate || null,
+          note: editNote.trim() || null,
+        })
+        .eq('id', itemId)
+        .select(
+          'id, name, quantity, unit, storage_location, category, expiration_date, note'
+        )
+        .single();
+
+      if (error) {
+        throw error;
+      }
+
+      setInventoryItems((items) =>
+        items.map((item) =>
+          item.id === itemId ? (data as InventoryItem) : item
+        )
+      );
+
+      setEditingId(null);
+    } catch (err) {
+      console.error(err);
+      setEditError(
+        err instanceof Error
+          ? `Failed to update food item: ${err.message}`
+          : 'Failed to update food item.'
+      );
+    } finally {
+      setEditLoading(false);
     }
   }
 
@@ -358,55 +443,221 @@ export default function Home() {
                     key={item.id}
                     className="rounded-md border border-gray-300 p-4"
                   >
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <h3 className="text-lg font-semibold">{item.name}</h3>
+                    {editingId === item.id ? (
+                      <div className="space-y-4">
+                        <h3 className="text-lg font-semibold">
+                          Edit Food
+                        </h3>
 
-                        <div className="mt-2 space-y-1 text-sm text-gray-700">
-                          {(item.quantity !== null || item.unit) && (
-                            <p>
-                              <span className="font-medium">Quantity:</span>{' '}
-                              {item.quantity !== null ? item.quantity : ''}
-                              {item.quantity !== null && item.unit ? ' ' : ''}
-                              {item.unit ?? ''}
-                            </p>
-                          )}
+                        {editError && (
+                          <div className="rounded-md border border-red-300 bg-red-50 p-3 text-red-700">
+                            {editError}
+                          </div>
+                        )}
 
-                          <p>
-                            <span className="font-medium">Storage:</span>{' '}
-                            {item.storage_location}
-                          </p>
+                        <div>
+                          <label className="mb-1 block text-sm font-medium">
+                            Name *
+                          </label>
+                          <input
+                            type="text"
+                            value={editName}
+                            onChange={(e) => setEditName(e.target.value)}
+                            className="w-full rounded-md border border-gray-300 px-3 py-2"
+                          />
+                        </div>
 
-                          <p>
-                            <span className="font-medium">Category:</span>{' '}
-                            {item.category}
-                          </p>
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                          <div>
+                            <label className="mb-1 block text-sm font-medium">
+                              Quantity
+                            </label>
+                            <input
+                              type="number"
+                              min="0"
+                              step="any"
+                              value={editQuantity}
+                              onChange={(e) =>
+                                setEditQuantity(e.target.value)
+                              }
+                              className="w-full rounded-md border border-gray-300 px-3 py-2"
+                            />
+                          </div>
 
-                          {item.expiration_date && (
-                            <p>
-                              <span className="font-medium">Expiration:</span>{' '}
-                              {item.expiration_date}
-                            </p>
-                          )}
+                          <div>
+                            <label className="mb-1 block text-sm font-medium">
+                              Unit
+                            </label>
+                            <input
+                              type="text"
+                              value={editUnit}
+                              onChange={(e) => setEditUnit(e.target.value)}
+                              className="w-full rounded-md border border-gray-300 px-3 py-2"
+                            />
+                          </div>
 
-                          {item.note && (
-                            <p>
-                              <span className="font-medium">Note:</span>{' '}
-                              {item.note}
-                            </p>
-                          )}
+                          <div>
+                            <label className="mb-1 block text-sm font-medium">
+                              Storage Location *
+                            </label>
+                            <select
+                              value={editStorageLocation}
+                              onChange={(e) =>
+                                setEditStorageLocation(
+                                  e.target.value as StorageLocation
+                                )
+                              }
+                              className="w-full rounded-md border border-gray-300 px-3 py-2"
+                            >
+                              <option value="pantry">Pantry</option>
+                              <option value="refrigerator">
+                                Refrigerator
+                              </option>
+                              <option value="freezer">Freezer</option>
+                            </select>
+                          </div>
+
+                          <div>
+                            <label className="mb-1 block text-sm font-medium">
+                              Category *
+                            </label>
+                            <input
+                              type="text"
+                              value={editCategory}
+                              onChange={(e) =>
+                                setEditCategory(e.target.value)
+                              }
+                              className="w-full rounded-md border border-gray-300 px-3 py-2"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="mb-1 block text-sm font-medium">
+                              Expiration Date
+                            </label>
+                            <input
+                              type="date"
+                              value={editExpirationDate}
+                              onChange={(e) =>
+                                setEditExpirationDate(e.target.value)
+                              }
+                              className="w-full rounded-md border border-gray-300 px-3 py-2"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="mb-1 block text-sm font-medium">
+                            Note
+                          </label>
+                          <textarea
+                            value={editNote}
+                            onChange={(e) => setEditNote(e.target.value)}
+                            rows={3}
+                            className="w-full rounded-md border border-gray-300 px-3 py-2"
+                          />
+                        </div>
+
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleUpdate(item.id)}
+                            disabled={editLoading}
+                            className="rounded-md bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            {editLoading ? 'Saving...' : 'Save Changes'}
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={cancelEditing}
+                            disabled={editLoading}
+                            className="rounded-md border border-gray-300 px-4 py-2 font-medium hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            Cancel
+                          </button>
                         </div>
                       </div>
+                    ) : (
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <h3 className="text-lg font-semibold">
+                            {item.name}
+                          </h3>
 
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(item.id)}
-                        disabled={deletingId === item.id}
-                        className="rounded-md border border-red-300 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        {deletingId === item.id ? 'Deleting...' : 'Delete'}
-                      </button>
-                    </div>
+                          <div className="mt-2 space-y-1 text-sm text-gray-700">
+                            {(item.quantity !== null || item.unit) && (
+                              <p>
+                                <span className="font-medium">
+                                  Quantity:
+                                </span>{' '}
+                                {item.quantity !== null
+                                  ? item.quantity
+                                  : ''}
+                                {item.quantity !== null && item.unit
+                                  ? ' '
+                                  : ''}
+                                {item.unit ?? ''}
+                              </p>
+                            )}
+
+                            <p>
+                              <span className="font-medium">
+                                Storage:
+                              </span>{' '}
+                              {item.storage_location}
+                            </p>
+
+                            <p>
+                              <span className="font-medium">
+                                Category:
+                              </span>{' '}
+                              {item.category}
+                            </p>
+
+                            {item.expiration_date && (
+                              <p>
+                                <span className="font-medium">
+                                  Expiration:
+                                </span>{' '}
+                                {item.expiration_date}
+                              </p>
+                            )}
+
+                            {item.note && (
+                              <p>
+                                <span className="font-medium">
+                                  Note:
+                                </span>{' '}
+                                {item.note}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => startEditing(item)}
+                            disabled={deletingId === item.id}
+                            className="rounded-md border border-gray-300 px-3 py-2 text-sm font-medium hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            Edit
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(item.id)}
+                            disabled={deletingId === item.id}
+                            className="rounded-md border border-red-300 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            {deletingId === item.id
+                              ? 'Deleting...'
+                              : 'Delete'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
