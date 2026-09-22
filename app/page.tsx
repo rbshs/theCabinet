@@ -155,13 +155,62 @@ export default function Home() {
       {error && <p role="alert" className="rounded-md border border-red-300 bg-red-50 p-3 text-red-700">{error}</p>}
       <form onSubmit={(event) => { event.preventDefault(); void send(input); }} className="space-y-3 border-t border-gray-200 pt-4">
         <label htmlFor="chatMessage" className="block text-sm font-medium">Message your meal assistant</label>
-        <textarea ref={composer} id="chatMessage" value={input} onChange={(event) => setInput(event.target.value)} rows={3} required
-          readOnly={loading} placeholder="What can I make for dinner?"
-          className="w-full rounded-md border border-gray-300 px-3 py-2" />
-        <button type="submit" disabled={loading || deletingId !== null || !input.trim()}
-          className="rounded-md bg-blue-600 px-5 py-2 font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50">
-          {loading ? 'Thinking...' : 'Send'}
-        </button>
+        <textarea
+          ref={composer}
+          id="chatMessage"
+          value={input}
+          onChange={(event) => setInput(event.target.value)}
+          rows={3}
+          required
+          readOnly={loading}
+          placeholder="What can I make for dinner?"
+          className="w-full rounded-md border border-gray-300 px-3 py-2"
+        />
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => void send('What can I make for breakfast?')}
+            disabled={loading || deletingId !== null}
+            className="rounded-md border border-blue-600 px-5 py-2 font-medium text-blue-700 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Breakfast
+          </button>
+
+          <button
+            type="button"
+            onClick={() => void send('What can I make for lunch?')}
+            disabled={loading || deletingId !== null}
+            className="rounded-md border border-blue-600 px-5 py-2 font-medium text-blue-700 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Lunch
+          </button>
+
+          <button
+            type="button"
+            onClick={() => void send('What can I make for dinner?')}
+            disabled={loading || deletingId !== null}
+            className="rounded-md border border-blue-600 px-5 py-2 font-medium text-blue-700 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Dinner
+          </button>
+
+          <button
+            type="button"
+            onClick={() => void send('What can I make for a snack?')}
+            disabled={loading || deletingId !== null}
+            className="rounded-md border border-blue-600 px-5 py-2 font-medium text-blue-700 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Snack
+          </button>
+
+          <button
+            type="submit"
+            disabled={loading || deletingId !== null || !input.trim()}
+            className="rounded-md bg-blue-600 px-5 py-2 font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {loading ? 'Thinking...' : 'Send'}
+          </button>
+        </div>
         <p className="text-xs text-gray-500">Conversation stays on this page and resets when you leave or refresh.</p>
       </form>
     </section>
