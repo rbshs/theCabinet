@@ -1,7 +1,8 @@
 import { supabase } from './supabaseClient';
 import type { InventoryItem } from '../src/types/inventory';
 
-type InventoryItemInput = Omit<InventoryItem, 'id'>;
+type InventoryItemInput = Pick<InventoryItem, 'name'> &
+  Partial<Omit<InventoryItem, 'id' | 'name'>>;
 
 const inventoryColumns =
   'id, name, quantity, unit, storage_location, category, expiration_date, note';

@@ -15,7 +15,7 @@ export default function Home() {
   const [quantity, setQuantity] = useState('');
   const [unit, setUnit] = useState('');
   const [storageLocation, setStorageLocation] =
-    useState<StorageLocation>('pantry');
+    useState<StorageLocation | ''>('');
   const [category, setCategory] = useState('');
   const [expirationDate, setExpirationDate] = useState('');
   const [note, setNote] = useState('');
@@ -32,7 +32,7 @@ export default function Home() {
   const [categoryFilter, setCategoryFilter] = useState('');
 
   const categories = Array.from(new Set([
-    ...inventoryItems.map((item) => item.category),
+    ...inventoryItems.map((item) => item.category).filter((category): category is string => Boolean(category)),
     ...(categoryFilter ? [categoryFilter] : []),
   ]));
   const searchTerm = search.trim().toLowerCase();
@@ -50,7 +50,7 @@ export default function Home() {
   const [editQuantity, setEditQuantity] = useState('');
   const [editUnit, setEditUnit] = useState('');
   const [editStorageLocation, setEditStorageLocation] =
-    useState<StorageLocation>('pantry');
+    useState<StorageLocation | ''>('');
   const [editCategory, setEditCategory] = useState('');
   const [editExpirationDate, setEditExpirationDate] = useState('');
   const [editNote, setEditNote] = useState('');
@@ -159,8 +159,8 @@ export default function Home() {
     setEditName(item.name);
     setEditQuantity(item.quantity !== null ? String(item.quantity) : '');
     setEditUnit(item.unit ?? '');
-    setEditStorageLocation(item.storage_location);
-    setEditCategory(item.category);
+    setEditStorageLocation(item.storage_location ?? '');
+    setEditCategory(item.category ?? '');
     setEditExpirationDate(item.expiration_date ?? '');
     setEditNote(item.note ?? '');
     setEditError('');
@@ -179,11 +179,6 @@ export default function Home() {
       return;
     }
 
-    if (!editCategory.trim()) {
-      setEditError('Category is required.');
-      return;
-    }
-
     setEditLoading(true);
 
     try {
@@ -191,8 +186,8 @@ export default function Home() {
         name: editName.trim(),
         quantity: editQuantity ? Number(editQuantity) : null,
         unit: editUnit.trim() || null,
-        storage_location: editStorageLocation,
-        category: editCategory.trim(),
+        storage_location: editStorageLocation || null,
+        category: editCategory.trim() || null,
         expiration_date: editExpirationDate || null,
         note: editNote.trim() || null,
       });
@@ -231,19 +226,14 @@ export default function Home() {
       return;
     }
 
-    if (!category.trim()) {
-      setError('Category is required.');
-      return;
-    }
-
     setLoading(true);
 
     const data = {
       name: name.trim(),
       quantity: quantity ? Number(quantity) : null,
       unit: unit.trim() || null,
-      storage_location: storageLocation,
-      category: category.trim(),
+      storage_location: storageLocation || null,
+      category: category.trim() || null,
       expiration_date: expirationDate || null,
       note: note.trim() || null,
     };
@@ -260,7 +250,7 @@ export default function Home() {
       setName('');
       setQuantity('');
       setUnit('');
-      setStorageLocation('pantry');
+      setStorageLocation('');
       setCategory('');
       setExpirationDate('');
       setNote('');
@@ -418,16 +408,17 @@ export default function Home() {
                 htmlFor="storageLocation"
                 className="mb-1 block text-sm font-medium"
               >
-                Storage Location *
+                Storage Location
               </label>
               <select
                 id="storageLocation"
                 value={storageLocation}
                 onChange={(e) =>
-                  setStorageLocation(e.target.value as StorageLocation)
+                  setStorageLocation(e.target.value as StorageLocation | '')
                 }
                 className="w-full rounded-md border border-gray-300 px-3 py-2"
               >
+                <option value="">Not specified</option>
                 <option value="pantry">Pantry</option>
                 <option value="refrigerator">Refrigerator</option>
                 <option value="freezer">Freezer</option>
@@ -439,7 +430,7 @@ export default function Home() {
                 htmlFor="category"
                 className="mb-1 block text-sm font-medium"
               >
-                Category *
+                Category
               </label>
               <input
                 id="category"
@@ -447,7 +438,6 @@ export default function Home() {
                 placeholder="Meat, dairy, produce..."
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                required
                 className="w-full rounded-md border border-gray-300 px-3 py-2"
               />
             </div>
@@ -655,17 +645,18 @@ export default function Home() {
 
                           <div>
                             <label className="mb-1 block text-sm font-medium">
-                              Storage Location *
+                              Storage Location
                             </label>
                             <select
                               value={editStorageLocation}
                               onChange={(e) =>
                                 setEditStorageLocation(
-                                  e.target.value as StorageLocation
+                                  e.target.value as StorageLocation | ''
                                 )
                               }
                               className="w-full rounded-md border border-gray-300 px-3 py-2"
                             >
+                              <option value="">Not specified</option>
                               <option value="pantry">Pantry</option>
                               <option value="refrigerator">
                                 Refrigerator
@@ -676,7 +667,7 @@ export default function Home() {
 
                           <div>
                             <label className="mb-1 block text-sm font-medium">
-                              Category *
+                              Category
                             </label>
                             <input
                               type="text"
@@ -762,14 +753,14 @@ export default function Home() {
                               <span className="font-medium">
                                 Storage:
                               </span>{' '}
-                              {item.storage_location}
+                              {item.storage_location ?? 'Not specified'}
                             </p>
 
                             <p>
                               <span className="font-medium">
                                 Category:
                               </span>{' '}
-                              {item.category}
+                              {item.category ?? 'Not specified'}
                             </p>
 
                             {item.expiration_date && (

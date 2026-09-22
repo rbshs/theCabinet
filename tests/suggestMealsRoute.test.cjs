@@ -83,6 +83,20 @@ test('empty inventory returns the response shape without invoking AI', async () 
   assert.deepEqual(await response.json(), { suggestions: [] });
 });
 
+test('name-only inventory preserves every null metadata field in AI context', async () => {
+  const item = {
+    id: inventory[0].id, name: 'Chicken thighs', quantity: null, unit: null,
+    storage_location: null, category: null, expiration_date: null, note: null,
+  };
+  const { POST } = loadRoute(async () => ({ data: [item], error: null }), async (request) => {
+    assert.deepEqual(JSON.parse(JSON.stringify(request.inventory)), [item]);
+    return output;
+  });
+  const response = await POST(makeRequest({ userRequest: 'Dinner?' }));
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), output);
+});
+
 test('database errors and missing data fail without calling AI or exposing details', async () => {
   for (const fetchInventory of [
     async () => ({ data: null, error: { message: 'private database detail' } }),
