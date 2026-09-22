@@ -47,3 +47,30 @@ export interface InventoryImportResponse {
 export interface InventoryImportProvider {
   importInventory(request: InventoryImportRequest): Promise<InventoryImportResponse>;
 }
+
+export interface ChatMealSuggestion extends MealSuggestion {
+  missingIngredients: string[];
+}
+
+export type ChatMessage =
+  | { role: 'user'; content: string }
+  | { role: 'assistant'; content: string; suggestions: ChatMealSuggestion[] };
+
+export interface ChatRequest {
+  messages: ChatMessage[];
+  inventory: readonly InventoryContext[];
+}
+
+export interface ChatResponse {
+  content: string;
+  suggestions: ChatMealSuggestion[];
+}
+
+// Inventory here comes from the database, never from the model.
+export interface ChatApiResponse extends ChatResponse {
+  inventory: InventoryContext[];
+}
+
+export interface ChatProvider {
+  chat(request: ChatRequest): Promise<ChatResponse>;
+}
