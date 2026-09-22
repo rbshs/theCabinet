@@ -16,7 +16,7 @@ export default function Navigation() {
     <header className="border-b border-gray-200 bg-white">
       <div className="mx-auto flex max-w-3xl flex-col gap-4 px-4 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
         <Link href="/" className="text-xl font-bold tracking-tight text-gray-900">
-          The Cabinet
+          theCabinet
         </Link>
         <nav aria-label="Main navigation" className="flex gap-2">
           {links.map(({ href, label }) => (
