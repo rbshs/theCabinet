@@ -3,6 +3,7 @@
 import { useRef, useState } from 'react';
 import { insertInventoryItem } from '../../lib/inventory';
 import type { StorageLocation } from '../../src/types/inventory';
+import InventoryImportReview from './InventoryImportReview';
 
 export default function AddPage() {
   const nameInput = useRef<HTMLInputElement>(null);
@@ -226,6 +227,7 @@ export default function AddPage() {
           </button>
         </div>
       </form>
+      <InventoryImportReview />
     </section>
   );
 }

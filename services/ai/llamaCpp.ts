@@ -58,7 +58,7 @@ function parseSuggestions(content: string, inventoryIds: Set<string>): MealSugge
   return { suggestions };
 }
 
-function completionUrl(): URL {
+export function completionUrl(): URL {
   const endpoint = process.env.AI_SERVICE_ENDPOINT?.trim();
   if (!endpoint) {
     throw new Error('AI_SERVICE_ENDPOINT must be configured for the local AI server.');

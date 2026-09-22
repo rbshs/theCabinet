@@ -33,3 +33,17 @@ export interface MealSuggestionResponse {
 export interface MealSuggestionProvider {
   suggestMeals(request: MealSuggestionRequest): Promise<MealSuggestionResponse>;
 }
+
+export interface InventoryImportRequest {
+  text: string;
+}
+
+export type InventoryImportItem = Omit<InventoryItem, 'id'>;
+
+export interface InventoryImportResponse {
+  items: InventoryImportItem[];
+}
+
+export interface InventoryImportProvider {
+  importInventory(request: InventoryImportRequest): Promise<InventoryImportResponse>;
+}
