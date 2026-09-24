@@ -32,7 +32,7 @@ Then open `http://localhost:3000`.
 
 ### Database
 
-Supabase migrations are located in `migrations/` and must be applied manually in order.
+The Cabinet uses Supabase for storing inventory and saved recipes.
 
 ## Inventory
 
