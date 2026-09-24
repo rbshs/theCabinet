@@ -120,14 +120,6 @@ export default function Home() {
                         );
                       })}
                     </ul>
-                    {suggestion.missingIngredients.length > 0 && (
-                      <div className="mt-4">
-                        <h3 className="text-sm font-semibold">You’d need</h3>
-                        <ul className="mt-1 list-disc space-y-1 pl-5 text-sm text-gray-700">
-                          {suggestion.missingIngredients.map((ingredient, ingredientIndex) => <li key={ingredientIndex}>{ingredient}</li>)}
-                        </ul>
-                      </div>
-                    )}
                     <button type="button" disabled={loading || deletingId !== null}
                       onClick={() => send(`Let's make "${suggestion.name}" from your suggestions. How should I cook it?`, 'recipe')}
                       className="mt-4 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50">
