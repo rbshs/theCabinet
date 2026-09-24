@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { ChatApiResponse, ChatMessage, InventoryContext } from '../services/ai';
 import { validateChatResponse } from '../services/ai/chat';
 import { removeChatInventoryItem } from '../lib/chatInventory';
+import SaveRecipeButton from './SaveRecipeButton';
 
 export default function Home() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -38,7 +39,8 @@ export default function Home() {
       if (!response.ok) throw new Error('Chat request failed.');
       const data: ChatApiResponse = await response.json();
       if (!Array.isArray(data.inventory)) throw new Error('Invalid inventory snapshot.');
-      const reply = validateChatResponse({ type: data.type, content: data.content, suggestions: data.suggestions }, new Set(data.inventory.map((item) => item.id)), responseMode);
+      const { inventory: currentInventory, ...assistantResponse } = data;
+      const reply = validateChatResponse(assistantResponse, new Set(currentInventory.map((item) => item.id)), responseMode);
       setInventory(data.inventory);
       setRecords((current) => ({ ...current, ...Object.fromEntries(data.inventory.map((item) => [item.id, item])) }));
       setMessages([...history, { role: 'assistant', ...reply }]);
@@ -91,6 +93,9 @@ export default function Home() {
             : 'rounded-lg border border-gray-200 bg-white p-4'}>
             <p className="mb-2 text-sm font-semibold text-gray-600">{message.role === 'user' ? 'You' : 'Cabinet assistant'}</p>
             <p className="whitespace-pre-wrap break-words text-gray-900">{message.content}</p>
+            {message.role === 'assistant' && message.type === 'recipe' && message.recipe && (
+              <SaveRecipeButton recipe={message.recipe} />
+            )}
             {message.role === 'assistant' && message.type === 'suggestions' && message.suggestions.length > 0 && (
               <div className="mt-4 space-y-4">
                 {message.suggestions.map((suggestion, index) => (

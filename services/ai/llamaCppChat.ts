@@ -27,6 +27,9 @@ export const llamaCppChatProvider: ChatProvider = {
               'The structured suggestions array is the actual answer: put ALL meal names, descriptions, inventory references and missing ingredients there. ' +
               'Do not repeat meal suggestions in content, and do not include a numbered or bulleted meal list in content. If suggestions is empty, briefly explain why instead. ' +
               'Set type to recipe when the user selects a meal or requests a complete recipe. Put the recipe in content, NEVER in suggestions. ' +
+              'For type recipe also provide the structured recipe object matching that same content: title, description (short or null), yield (servings text or null), ingredients (name, quantity text or null, unit text or null), steps (ordered strings without number prefixes), and notes (strings, or an empty array). ' +
+              'Preserve preparation details, quantities, timing, temperatures and useful notes in the structured fields; do not invent additional details or alternatives when structuring the recipe. Use null for unknown quantities or units. ' +
+              'Only when clarification is needed and no complete usable recipe can be given, set recipe to null and put the question or explanation in content. Never provide a partial placeholder recipe for saving. ' +
               'Set type to conversation for other ordinary replies. Recipe and conversation responses MUST have an empty suggestions array. ' +
               'For follow-up cooking questions, including substitutions, timing, quantities and troubleshooting, use type conversation and answer the specific question naturally in context. ' +
               'Do not repeat the full recipe or force recipe sections onto a follow-up unless the user asks for a complete or revised recipe. New meal ideas may return suggestions again. ' +
@@ -57,7 +60,8 @@ export const llamaCppChatProvider: ChatProvider = {
             { role: 'system', content: JSON.stringify({ currentInventory: inventory }) },
             ...(mode ? [{ role: 'system', content: `The current user action explicitly requests response type ${mode}. Return that type only.` }] : []),
             ...messages.map((message) => ({ role: message.role, content: message.role === 'assistant'
-              ? JSON.stringify({ type: message.type, content: message.content, suggestions: message.suggestions }) : message.content })),
+              ? JSON.stringify({ type: message.type, content: message.content, suggestions: message.suggestions,
+                ...(message.type === 'recipe' ? { recipe: message.recipe } : {}) }) : message.content })),
           ],
           response_format: { type: 'json_object', schema: responseSchemaFor(mode) },
         }),

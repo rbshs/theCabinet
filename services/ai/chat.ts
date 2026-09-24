@@ -1,4 +1,5 @@
 import type { ChatMessage, ChatMealSuggestion, ChatResponse } from './index';
+import { recipeSchema, validateRecipe } from '../../lib/recipe';
 
 const suggestionResponseSchema = {
   type: 'object', additionalProperties: false, required: ['type', 'content', 'suggestions'],
@@ -24,10 +25,12 @@ const suggestionResponseSchema = {
 
 function textResponseSchema(type: 'recipe' | 'conversation') {
   return {
-    type: 'object', additionalProperties: false, required: ['type', 'content', 'suggestions'],
+    type: 'object', additionalProperties: false,
+    required: type === 'recipe' ? ['type', 'content', 'suggestions', 'recipe'] : ['type', 'content', 'suggestions'],
     properties: {
       type: { const: type }, content: { type: 'string', minLength: 1 },
       suggestions: { type: 'array', maxItems: 0, items: { type: 'string' } },
+      ...(type === 'recipe' ? { recipe: { anyOf: [recipeSchema, { type: 'null' }] } } : {}),
     },
   };
 }
@@ -63,13 +66,17 @@ function suggestions(value: unknown, inventoryIds?: Set<string>): ChatMealSugges
 }
 
 export function validateChatResponse(value: unknown, inventoryIds?: Set<string>, mode?: 'recipe' | 'suggestions'): ChatResponse {
-  if (!object(value) || Object.keys(value).length !== 3 || !nonblank(value.content) ||
+  if (!object(value) || Object.keys(value).length !== (value.type === 'recipe' ? 4 : 3) || !nonblank(value.content) ||
     (mode !== undefined && value.type !== mode)) {
     throw new Error('Invalid assistant response.');
   }
   const items = suggestions(value.suggestions, inventoryIds);
   if (value.type === 'suggestions') return { type: value.type, content: value.content, suggestions: items };
-  if ((value.type === 'recipe' || value.type === 'conversation') && items.length === 0) {
+  if (value.type === 'recipe' && items.length === 0) {
+    return { type: value.type, content: value.content, suggestions: [],
+      recipe: value.recipe === null ? null : validateRecipe(value.recipe) };
+  }
+  if (value.type === 'conversation' && items.length === 0) {
     return { type: value.type, content: value.content, suggestions: [] };
   }
   throw new Error('Invalid response type or suggestions in a text response.');
@@ -86,9 +93,10 @@ export function validateChatRequest(value: unknown): ChatMessage[] {
       return { role: 'user', content: message.content,
         ...(message.responseMode ? { responseMode: message.responseMode as 'recipe' | 'suggestions' } : {}) };
     }
-    if (message.role === 'assistant' && Object.keys(message).length === 4) {
+    if (message.role === 'assistant' && Object.keys(message).length === (message.type === 'recipe' ? 5 : 4)) {
       // Historical references may have been deleted; they are not current inventory.
-      return { role: 'assistant', ...validateChatResponse({ type: message.type, content: message.content, suggestions: message.suggestions }) };
+      const { role, ...response } = message;
+      return { role: 'assistant', ...validateChatResponse(response) };
     }
     throw new Error('Invalid message role or fields.');
   });

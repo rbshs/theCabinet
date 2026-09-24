@@ -1,4 +1,5 @@
 import type { InventoryItem } from '../../src/types/inventory';
+import type { Recipe } from '../../src/types/recipe';
 
 // Preserve inventory field names and null values, including unknown quantities.
 export type InventoryContext = Readonly<Pick<InventoryItem,
@@ -63,7 +64,8 @@ export interface ChatRequest {
 
 export type ChatResponse = { content: string } & (
   | { type: 'suggestions'; suggestions: ChatMealSuggestion[] }
-  | { type: 'recipe' | 'conversation'; suggestions: [] }
+  | { type: 'recipe'; suggestions: []; recipe: Recipe | null }
+  | { type: 'conversation'; suggestions: [] }
 );
 
 // Inventory here comes from the database, never from the model.

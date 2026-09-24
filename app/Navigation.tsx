@@ -7,6 +7,7 @@ const links = [
   { href: '/', label: 'Home' },
   { href: '/add', label: 'Add' },
   { href: '/inventory', label: 'Inventory' },
+  { href: '/recipes', label: 'Saved Recipes' },
 ];
 
 export default function Navigation() {
@@ -18,7 +19,7 @@ export default function Navigation() {
         <Link href="/" className="text-xl font-bold tracking-tight text-gray-900">
           theCabinet
         </Link>
-        <nav aria-label="Main navigation" className="flex gap-2">
+        <nav aria-label="Main navigation" className="flex flex-wrap gap-2">
           {links.map(({ href, label }) => (
             <Link
               key={href}
