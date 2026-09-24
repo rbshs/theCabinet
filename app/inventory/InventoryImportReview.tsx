@@ -9,7 +9,7 @@ import type { InventoryReviewRow } from '../../lib/inventoryImportReview';
 const inputClass = 'mt-1 w-full rounded-md border border-gray-300 px-3 py-2';
 const buttonClass = 'rounded-md bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50';
 
-export default function InventoryImportReview() {
+export default function InventoryImportReview({ onAdded }: { onAdded: () => Promise<void> }) {
   const [text, setText] = useState('');
   const [rows, setRows] = useState<InventoryReviewRow[] | null>(null);
   const [importing, setImporting] = useState(false);
@@ -64,6 +64,8 @@ export default function InventoryImportReview() {
     } catch {
       setError(`${saved ? `${saved} item${saved === 1 ? '' : 's'} saved and removed from this list. ` : ''}Unable to finish saving. Check the remaining selected names, quantities and dates, then retry. If your connection dropped, check Inventory before retrying.`);
     } finally {
+      // Refresh even when only part of the reviewed batch was saved.
+      if (saved > 0) await onAdded();
       setSaving(false);
       busy.current = false;
     }

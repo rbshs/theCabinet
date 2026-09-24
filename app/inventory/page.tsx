@@ -7,8 +7,10 @@ import {
   deleteInventoryItem,
 } from '../../lib/inventory';
 import type { InventoryItem, StorageLocation } from '../../src/types/inventory';
+import AddInventoryForm from './AddInventoryForm';
 
 export default function InventoryPage() {
+  const [adding, setAdding] = useState(false);
   const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
   const [inventoryLoading, setInventoryLoading] = useState(true);
   const [inventoryError, setInventoryError] = useState('');
@@ -46,17 +48,29 @@ export default function InventoryPage() {
     setInventoryLoading(true);
     setInventoryError('');
 
-    const { data, error } = await fetchInventoryItems();
-
-    if (error) {
-      console.error(error);
-      setInventoryError(`Failed to load inventory: ${error.message}`);
-      setInventoryItems([]);
-    } else {
+    try {
+      const { data, error } = await fetchInventoryItems();
+      if (error) {
+        throw new Error(error.message);
+      }
       setInventoryItems(data ?? []);
+    } catch (err) {
+      console.error(err);
+      setInventoryError(err instanceof Error
+        ? `Failed to load inventory: ${err.message}`
+        : 'Failed to load inventory.');
+      setInventoryItems([]);
+    } finally {
+      setInventoryLoading(false);
     }
+  }
 
-    setInventoryLoading(false);
+  async function handleItemsAdded() {
+    // Existing filters must not hide an item the user just added.
+    setSearch('');
+    setStorageFilter('');
+    setCategoryFilter('');
+    await fetchInventory();
   }
 
   useEffect(() => {
@@ -160,7 +174,17 @@ export default function InventoryPage() {
 
   return (
     <section className="space-y-4">
-      <h1 className="text-2xl font-semibold">Inventory</h1>
+      <div className="flex items-center justify-between gap-4">
+        <h1 className="text-2xl font-semibold">Inventory</h1>
+        <button type="button" onClick={() => setAdding((current) => !current)}
+          aria-expanded={adding} aria-controls="addInventorySection"
+          className="rounded-md bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700">
+          {adding ? 'Hide add form' : 'Add Item'}
+        </button>
+      </div>
+      <div id="addInventorySection" hidden={!adding} className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+        <AddInventoryForm onAdded={handleItemsAdded} />
+      </div>
 
       <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
         <div>
@@ -234,6 +258,8 @@ export default function InventoryPage() {
       {inventoryError && (
         <div className="mt-4 rounded-md border border-red-300 bg-red-50 p-3 text-red-700">
           {inventoryError}
+          <button type="button" onClick={() => void fetchInventory()} disabled={inventoryLoading}
+            className="ml-2 font-medium underline disabled:opacity-50">Retry loading inventory</button>
         </div>
       )}
 
