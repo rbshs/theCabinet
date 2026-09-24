@@ -24,8 +24,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unable to load your Cabinet inventory. Please try again.' }, { status: 500, headers });
   }
   const inventoryIds = new Set(inventory.map((item) => item.id));
+  const lastMessage = messages[messages.length - 1];
+  const mode = lastMessage.role === 'user' ? lastMessage.responseMode : undefined;
   try {
-    const result = validateChatResponse(await provider.chat({ messages, inventory }), inventoryIds);
+    const result = validateChatResponse(await provider.chat({ messages, inventory }), inventoryIds, mode);
     return NextResponse.json<ChatApiResponse>({ ...result, inventory }, { headers });
   } catch {
     return NextResponse.json({ error: 'Unable to reply. Check the local AI server and try again.' }, { status: 502, headers });

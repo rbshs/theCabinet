@@ -53,21 +53,21 @@ export interface ChatMealSuggestion extends MealSuggestion {
 }
 
 export type ChatMessage =
-  | { role: 'user'; content: string }
-  | { role: 'assistant'; content: string; suggestions: ChatMealSuggestion[] };
+  | { role: 'user'; content: string; responseMode?: 'recipe' | 'suggestions' }
+  | ({ role: 'assistant' } & ChatResponse);
 
 export interface ChatRequest {
   messages: ChatMessage[];
   inventory: readonly InventoryContext[];
 }
 
-export interface ChatResponse {
-  content: string;
-  suggestions: ChatMealSuggestion[];
-}
+export type ChatResponse = { content: string } & (
+  | { type: 'suggestions'; suggestions: ChatMealSuggestion[] }
+  | { type: 'recipe' | 'conversation'; suggestions: [] }
+);
 
 // Inventory here comes from the database, never from the model.
-export interface ChatApiResponse extends ChatResponse {
+export type ChatApiResponse = ChatResponse & {
   inventory: InventoryContext[];
 }
 
