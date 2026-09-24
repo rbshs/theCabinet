@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useRef, useState } from 'react';
 import type { ChatApiResponse, ChatMessage, InventoryContext } from '../services/ai';
@@ -23,13 +23,13 @@ export default function Home() {
     if (messages.length || loading) bottom.current?.scrollIntoView({ block: 'nearest' });
   }, [messages, loading]);
 
-  async function send(content: string) {
+  async function send(content: string, responseMode?: 'recipe' | 'suggestions') {
     if (busy.current || !content.trim()) return;
     busy.current = true;
     setLoading(true);
     setError('');
     setInput(content);
-    const history: ChatMessage[] = [...messages, { role: 'user', content: content.trim() }];
+    const history: ChatMessage[] = [...messages, { role: 'user', content: content.trim(), ...(responseMode ? { responseMode } : {}) }];
     try {
       const response = await fetch('/api/ai/chat', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -38,7 +38,7 @@ export default function Home() {
       if (!response.ok) throw new Error('Chat request failed.');
       const data: ChatApiResponse = await response.json();
       if (!Array.isArray(data.inventory)) throw new Error('Invalid inventory snapshot.');
-      const reply = validateChatResponse({ content: data.content, suggestions: data.suggestions }, new Set(data.inventory.map((item) => item.id)));
+      const reply = validateChatResponse({ type: data.type, content: data.content, suggestions: data.suggestions }, new Set(data.inventory.map((item) => item.id)), responseMode);
       setInventory(data.inventory);
       setRecords((current) => ({ ...current, ...Object.fromEntries(data.inventory.map((item) => [item.id, item])) }));
       setMessages([...history, { role: 'assistant', ...reply }]);
@@ -91,7 +91,7 @@ export default function Home() {
             : 'rounded-lg border border-gray-200 bg-white p-4'}>
             <p className="mb-2 text-sm font-semibold text-gray-600">{message.role === 'user' ? 'You' : 'Cabinet assistant'}</p>
             <p className="whitespace-pre-wrap break-words text-gray-900">{message.content}</p>
-            {message.role === 'assistant' && message.suggestions.length > 0 && (
+            {message.role === 'assistant' && message.type === 'suggestions' && message.suggestions.length > 0 && (
               <div className="mt-4 space-y-4">
                 {message.suggestions.map((suggestion, index) => (
                   <section key={index} className="rounded-md border border-gray-200 bg-gray-50 p-4">
@@ -107,12 +107,6 @@ export default function Home() {
                           <li key={id} className="flex flex-col gap-2 text-sm sm:flex-row sm:items-center sm:justify-between">
                             <div className="min-w-0 break-words">
                               <span className="font-medium">{item?.name ?? 'Inventory item'}</span>
-                              {item && <span className="block text-gray-600">
-                                {item.quantity === null ? 'Quantity unknown' : `${item.quantity}${item.unit ? ` ${item.unit}` : ''}`}
-                                {item.storage_location ? ` · ${item.storage_location}` : ''}
-                                {item.expiration_date ? ` · Expires ${item.expiration_date}` : ''}
-                                {item.note ? ` · ${item.note}` : ''}
-                              </span>}
                               {!available && <span className="block font-medium text-amber-800">No longer in your Cabinet</span>}
                             </div>
                             {available && item && (
@@ -135,7 +129,7 @@ export default function Home() {
                       </div>
                     )}
                     <button type="button" disabled={loading || deletingId !== null}
-                      onClick={() => send(`Let's make "${suggestion.name}" from your suggestions. How should I cook it?`)}
+                      onClick={() => send(`Let's make "${suggestion.name}" from your suggestions. How should I cook it?`, 'recipe')}
                       className="mt-4 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50">
                       Let’s make this
                     </button>

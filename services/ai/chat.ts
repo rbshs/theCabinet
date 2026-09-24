@@ -1,9 +1,11 @@
 import type { ChatMessage, ChatMealSuggestion, ChatResponse } from './index';
 
-export const chatResponseSchema = {
-  type: 'object', additionalProperties: false, required: ['content', 'suggestions'],
+const suggestionResponseSchema = {
+  type: 'object', additionalProperties: false, required: ['type', 'content', 'suggestions'],
   properties: {
-    content: { type: 'string', minLength: 1 },
+    type: { const: 'suggestions' },
+    content: { type: 'string', minLength: 1,
+      description: 'One short introductory sentence only. Put all meal names, descriptions, and ingredient lists in suggestions; do not repeat them here or include a numbered or bulleted meal list. If no meals can be suggested, briefly explain why.' },
     suggestions: {
       type: 'array', maxItems: 3,
       items: {
@@ -19,6 +21,23 @@ export const chatResponseSchema = {
     },
   },
 };
+
+function textResponseSchema(type: 'recipe' | 'conversation') {
+  return {
+    type: 'object', additionalProperties: false, required: ['type', 'content', 'suggestions'],
+    properties: {
+      type: { const: type }, content: { type: 'string', minLength: 1 },
+      suggestions: { type: 'array', maxItems: 0, items: { type: 'string' } },
+    },
+  };
+}
+
+export function responseSchemaFor(mode?: 'recipe' | 'suggestions') {
+  if (mode === 'recipe') return textResponseSchema('recipe');
+  if (mode === 'suggestions') return suggestionResponseSchema;
+  return { oneOf: [suggestionResponseSchema, textResponseSchema('recipe'), textResponseSchema('conversation')] };
+}
+export const chatResponseSchema = responseSchemaFor();
 
 function object(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -43,11 +62,17 @@ function suggestions(value: unknown, inventoryIds?: Set<string>): ChatMealSugges
   });
 }
 
-export function validateChatResponse(value: unknown, inventoryIds: Set<string>): ChatResponse {
-  if (!object(value) || Object.keys(value).length !== 2 || !nonblank(value.content)) {
+export function validateChatResponse(value: unknown, inventoryIds?: Set<string>, mode?: 'recipe' | 'suggestions'): ChatResponse {
+  if (!object(value) || Object.keys(value).length !== 3 || !nonblank(value.content) ||
+    (mode !== undefined && value.type !== mode)) {
     throw new Error('Invalid assistant response.');
   }
-  return { content: value.content, suggestions: suggestions(value.suggestions, inventoryIds) };
+  const items = suggestions(value.suggestions, inventoryIds);
+  if (value.type === 'suggestions') return { type: value.type, content: value.content, suggestions: items };
+  if ((value.type === 'recipe' || value.type === 'conversation') && items.length === 0) {
+    return { type: value.type, content: value.content, suggestions: [] };
+  }
+  throw new Error('Invalid response type or suggestions in a text response.');
 }
 
 export function validateChatRequest(value: unknown): ChatMessage[] {
@@ -56,12 +81,14 @@ export function validateChatRequest(value: unknown): ChatMessage[] {
   }
   const messages: ChatMessage[] = value.messages.map((message: unknown) => {
     if (!object(message) || !nonblank(message.content)) throw new Error('Invalid message.');
-    if (message.role === 'user' && Object.keys(message).length === 2) {
-      return { role: 'user', content: message.content };
+    if (message.role === 'user' && (Object.keys(message).length === 2 ||
+      (Object.keys(message).length === 3 && (message.responseMode === 'recipe' || message.responseMode === 'suggestions')))) {
+      return { role: 'user', content: message.content,
+        ...(message.responseMode ? { responseMode: message.responseMode as 'recipe' | 'suggestions' } : {}) };
     }
-    if (message.role === 'assistant' && Object.keys(message).length === 3) {
+    if (message.role === 'assistant' && Object.keys(message).length === 4) {
       // Historical references may have been deleted; they are not current inventory.
-      return { role: 'assistant', content: message.content, suggestions: suggestions(message.suggestions) };
+      return { role: 'assistant', ...validateChatResponse({ type: message.type, content: message.content, suggestions: message.suggestions }) };
     }
     throw new Error('Invalid message role or fields.');
   });
