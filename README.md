@@ -1,6 +1,6 @@
-# The Cabinet
+# theCabinet
 
-The Cabinet is a personal AI-powered kitchen assistant that helps you decide what to cook based on the food you have available.
+theCabinet is a personal AI-powered kitchen assistant that helps you decide what to cook based on the food you have available.
 
 ## Features
 
@@ -37,8 +37,6 @@ The Cabinet uses Supabase for storing inventory and saved recipes.
 ## Inventory
 
 Inventory is intentionally simple. Items consist of a name and an optional note.
-
-The app does not currently track quantities, units, storage locations, categories, or expiration dates.
 
 ## Project Status
 
