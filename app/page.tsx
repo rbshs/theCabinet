@@ -104,7 +104,7 @@ export default function Home() {
                         const item = records[id];
                         const available = availableIds.has(id);
                         return (
-                          <li key={id} className="flex flex-col gap-2 text-sm sm:flex-row sm:items-center sm:justify-between">
+                          <li key={id} className="flex flex-col gap-1 text-sm sm:flex-row sm:items-center sm:justify-between">
                             <div className="min-w-0 break-words">
                               <span className="font-medium">{item?.name ?? 'Inventory item'}</span>
                               {!available && <span className="block font-medium text-amber-800">No longer in your Cabinet</span>}
@@ -112,7 +112,7 @@ export default function Home() {
                             {available && item && (
                               <button type="button" onClick={() => removeItem(item)} disabled={loading || deletingId !== null}
                                 aria-label={`Remove ${item.name} from Cabinet`}
-                                className="shrink-0 self-start rounded-md border border-red-300 px-3 py-2 text-red-700 hover:bg-red-50 disabled:opacity-50">
+                                className="shrink-0 self-start rounded border border-red-300 px-1 py-0 text-[11px] leading-5 text-red-700 hover:bg-red-50 disabled:opacity-50">
                                 {deletingId === id ? 'Removing...' : 'Remove from Cabinet'}
                               </button>
                             )}
