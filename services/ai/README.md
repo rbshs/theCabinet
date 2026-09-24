@@ -48,7 +48,7 @@ To make a real request:
 The live mode invokes the actual adapter with a small chicken inventory and a dinner
 request, prints validated suggestions, and exits unsuccessfully on an adapter error.
 It makes no Supabase calls and does not modify inventory. Review the suggestion for
-relevance and ensure it does not assume a known quantity. The script uses the existing
+relevance and ensure it treats inventory as food availability only. The script uses the existing
 TypeScript compiler and Next.js server marker to run the adapter in Node; no runner
 dependency is installed. This checks the adapter, not a user-facing application flow.
 
@@ -56,7 +56,9 @@ dependency is installed. This checks the adapter, not a user-facing application 
 
 Send JSON containing `userRequest` to `POST /api/ai/suggest-meals`.
 The route calls `fetchInventory()` from `lib/inventory.ts` for every request and
-copies all eight inventory context fields without changing IDs or null quantities.
+copies the three inventory context fields (id, name and note), preserving IDs and
+null notes. Inventory describes food availability only; recipe ingredient amounts
+remain part of cooking guidance.
 Client-supplied inventory is ignored. The route passes this context and the trimmed
 request to `llamaCppProvider` through `MealSuggestionProvider`.
 The adapter validates response structure and inventory references; the route also

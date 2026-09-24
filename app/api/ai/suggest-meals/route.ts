@@ -40,11 +40,6 @@ export async function POST(request: Request) {
     inventory = data.map((item) => ({
       id: item.id,
       name: item.name,
-      quantity: item.quantity,
-      unit: item.unit,
-      storage_location: item.storage_location,
-      category: item.category,
-      expiration_date: item.expiration_date,
       note: item.note,
     }));
   } catch {

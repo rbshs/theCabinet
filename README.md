@@ -15,6 +15,26 @@ This is the initial project structure for The Cabinet application.
 2. Start development server: `npm run dev`
 3. Open [http://localhost:3000](http://localhost:3000) in your browser
 
+## Inventory
+
+Manage available foods on `/inventory`; name is the only required field, with an
+optional note. Text import extracts foods and discards stock amounts, units,
+storage locations, categories and expiration dates rather than storing them in
+other fields. Recipe ingredient amounts remain unchanged.
+
+Apply `migrations/006_remove_inventory_amounts_and_location.sql` after the earlier
+inventory migrations. It drops `quantity`, `unit` and `storage_location` from
+`inventory_items`, permanently discarding their values. It preserves item IDs,
+names and remaining details, and does not change `saved_recipes`. Earlier
+migrations are intentionally unchanged; new installations should apply them in
+order as well.
+
+Then apply `migrations/007_remove_inventory_category_and_expiration.sql` to drop
+`category` and `expiration_date`, permanently discarding those values. If 006 is
+already applied, apply only 007. Inventory API records now contain `id`, `name`
+and nullable `note`; database creation/update timestamps remain internal metadata.
+Saved Recipes and all earlier migrations remain unchanged.
+
 ## Saved recipes
 
 Apply saved-recipe migrations in order: `003_create_saved_recipes.sql`,

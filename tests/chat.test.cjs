@@ -17,7 +17,7 @@ function load(file, deps = {}, globals = {}) {
   return context.exports;
 }
 const validation = load('services/ai/chat.ts');
-const item = { id: 'bacon-id', name: 'Bacon', quantity: 2.32, unit: 'lb', storage_location: 'Fridge', category: null, expiration_date: '2026-10-15', note: 'Use opened package first' };
+const item = { id: 'bacon-id', name: 'Bacon', note: 'Use opened package first' };
 const meal = { name: 'Bacon sandwich', description: 'A sandwich', inventoryItemIds: [item.id], missingIngredients: ['Bun'] };
 const ideas = { type: 'suggestions', content: 'Here are a few breakfast ideas using your current inventory:', suggestions: [meal] };
 const recipe = { type: 'recipe', content: '1. Cook the bacon.\n2. Assemble.', suggestions: [] };
@@ -65,7 +65,7 @@ test('suggestion inventory displays names only while retaining full records and 
   const ui = page([assistant(ideas)], undefined, async entry => { removed = entry; return false; });
   const markup = ui.markup();
   assert.match(markup, /Bacon/);
-  assert.doesNotMatch(markup, /2\.32|\blb\b|Fridge|2026-10-15|Use opened package first|Quantity unknown/);
+  assert.doesNotMatch(markup, /Use opened package first/);
   assert.match(markup, /Remove from Cabinet/);
   await ui.buttons().find(b => b.props['aria-label'] === 'Remove Bacon from Cabinet').props.onClick();
   assert.deepEqual(removed, item);
@@ -176,7 +176,7 @@ test('actual suggestion deletion preserves confirmation, exact ID, state updates
       deleted.push(id); return { error: scenario === 'error' ? new Error('failure') : null };
     } } }).removeChatInventoryItem;
     const ui = page([assistant(ideas)], undefined, (entry) => helper(entry, text => {
-      assert.match(text, /Bacon/); assert.match(text, /Fridge/); return scenario !== 'cancel';
+      assert.match(text, /Bacon/); assert.match(text, /Use opened package first/); return scenario !== 'cancel';
     }));
     await ui.buttons().find(b => b.props['aria-label'] === 'Remove Bacon from Cabinet').props.onClick();
     assert.deepEqual(deleted, scenario === 'cancel' ? [] : [item.id]);

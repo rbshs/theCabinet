@@ -2,18 +2,11 @@
 
 import { useRef, useState } from 'react';
 import { insertInventoryItem } from '../../lib/inventory';
-import type { StorageLocation } from '../../src/types/inventory';
 import InventoryImportReview from './InventoryImportReview';
 
 export default function AddInventoryForm({ onAdded }: { onAdded: () => Promise<void> }) {
   const nameInput = useRef<HTMLInputElement>(null);
   const [name, setName] = useState('');
-  const [quantity, setQuantity] = useState('');
-  const [unit, setUnit] = useState('');
-  const [storageLocation, setStorageLocation] =
-    useState<StorageLocation | ''>('');
-  const [category, setCategory] = useState('');
-  const [expirationDate, setExpirationDate] = useState('');
   const [note, setNote] = useState('');
 
   const [loading, setLoading] = useState(false);
@@ -35,11 +28,6 @@ export default function AddInventoryForm({ onAdded }: { onAdded: () => Promise<v
 
     const data = {
       name: name.trim(),
-      quantity: quantity ? Number(quantity) : null,
-      unit: unit.trim() || null,
-      storage_location: storageLocation || null,
-      category: category.trim() || null,
-      expiration_date: expirationDate || null,
       note: note.trim() || null,
     };
 
@@ -53,11 +41,6 @@ export default function AddInventoryForm({ onAdded }: { onAdded: () => Promise<v
       setSuccess('Food added successfully. You can add another item below.');
 
       setName('');
-      setQuantity('');
-      setUnit('');
-      setStorageLocation('');
-      setCategory('');
-      setExpirationDate('');
       setNote('');
 
       nameInput.current?.focus();
@@ -92,7 +75,7 @@ export default function AddInventoryForm({ onAdded }: { onAdded: () => Promise<v
 
       <form
         onSubmit={handleSubmit}
-        className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2"
+        className="mt-6 grid grid-cols-1 gap-4"
       >
         <div>
           <label
@@ -112,97 +95,7 @@ export default function AddInventoryForm({ onAdded }: { onAdded: () => Promise<v
           />
         </div>
 
-        <div>
-          <label
-            htmlFor="quantity"
-            className="mb-1 block text-sm font-medium"
-          >
-            Quantity
-          </label>
-          <input
-            id="quantity"
-            type="number"
-            min="0"
-            step="any"
-            value={quantity}
-            onChange={(e) => setQuantity(e.target.value)}
-            className="w-full rounded-md border border-gray-300 px-3 py-2"
-          />
-        </div>
-
-        <div>
-          <label
-            htmlFor="unit"
-            className="mb-1 block text-sm font-medium"
-          >
-            Unit
-          </label>
-          <input
-            id="unit"
-            type="text"
-            placeholder="lbs, cans, pieces..."
-            value={unit}
-            onChange={(e) => setUnit(e.target.value)}
-            className="w-full rounded-md border border-gray-300 px-3 py-2"
-          />
-        </div>
-
-        <div>
-          <label
-            htmlFor="storageLocation"
-            className="mb-1 block text-sm font-medium"
-          >
-            Storage Location
-          </label>
-          <select
-            id="storageLocation"
-            value={storageLocation}
-            onChange={(e) =>
-              setStorageLocation(e.target.value as StorageLocation | '')
-            }
-            className="w-full rounded-md border border-gray-300 px-3 py-2"
-          >
-            <option value="">Not specified</option>
-            <option value="pantry">Pantry</option>
-            <option value="refrigerator">Refrigerator</option>
-            <option value="freezer">Freezer</option>
-          </select>
-        </div>
-
-        <div>
-          <label
-            htmlFor="category"
-            className="mb-1 block text-sm font-medium"
-          >
-            Category
-          </label>
-          <input
-            id="category"
-            type="text"
-            placeholder="Meat, dairy, produce..."
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            className="w-full rounded-md border border-gray-300 px-3 py-2"
-          />
-        </div>
-
-        <div>
-          <label
-            htmlFor="expirationDate"
-            className="mb-1 block text-sm font-medium"
-          >
-            Expiration Date
-          </label>
-          <input
-            id="expirationDate"
-            type="date"
-            value={expirationDate}
-            onChange={(e) => setExpirationDate(e.target.value)}
-            className="w-full rounded-md border border-gray-300 px-3 py-2"
-          />
-        </div>
-
-        <div className="md:col-span-2">
+        <div className="min-w-0">
           <label
             htmlFor="note"
             className="mb-1 block text-sm font-medium"
@@ -218,7 +111,7 @@ export default function AddInventoryForm({ onAdded }: { onAdded: () => Promise<v
           />
         </div>
 
-        <div className="md:col-span-2">
+        <div className="min-w-0">
           <button
             type="submit"
             disabled={loading}

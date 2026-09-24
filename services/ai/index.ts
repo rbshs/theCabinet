@@ -1,15 +1,10 @@
 import type { InventoryItem } from '../../src/types/inventory';
 import type { Recipe } from '../../src/types/recipe';
 
-// Preserve inventory field names and null values, including unknown quantities.
+// Preserve inventory field names and null values for optional details.
 export type InventoryContext = Readonly<Pick<InventoryItem,
   | 'id'
   | 'name'
-  | 'quantity'
-  | 'unit'
-  | 'storage_location'
-  | 'category'
-  | 'expiration_date'
   | 'note'
 >>;
 

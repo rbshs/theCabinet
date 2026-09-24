@@ -29,12 +29,12 @@ function loadProvider(overrides = {}) {
 const request = {
   userRequest: 'What should I make for dinner?',
   inventory: [{
-    id: 'test-chicken', name: 'Chicken thighs', quantity: null, unit: null,
-    storage_location: 'refrigerator', category: 'Meat', expiration_date: null, note: null,
+    id: 'test-chicken', name: 'Chicken thighs',
+    note: null,
   }],
 };
 const meal = {
-  name: 'Chicken dinner', description: 'A chicken-based dinner; available quantity is unknown.',
+  name: 'Chicken dinner', description: 'A chicken-based dinner.',
   inventoryItemIds: ['test-chicken'],
 };
 const envelope = (value, finish_reason = 'stop') => Response.json({

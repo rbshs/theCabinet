@@ -62,7 +62,7 @@ export default function InventoryImportReview({ onAdded }: { onAdded: () => Prom
       setText('');
       setRows(null);
     } catch {
-      setError(`${saved ? `${saved} item${saved === 1 ? '' : 's'} saved and removed from this list. ` : ''}Unable to finish saving. Check the remaining selected names, quantities and dates, then retry. If your connection dropped, check Inventory before retrying.`);
+      setError(`${saved ? `${saved} item${saved === 1 ? '' : 's'} saved and removed from this list. ` : ''}Unable to finish saving. Check the remaining selected names, then retry. If your connection dropped, check Inventory before retrying.`);
     } finally {
       // Refresh even when only part of the reviewed batch was saved.
       if (saved > 0) await onAdded();
@@ -80,7 +80,7 @@ export default function InventoryImportReview({ onAdded }: { onAdded: () => Prom
           Food list
           <textarea value={text} onChange={(event) => setText(event.target.value)} required rows={5}
             disabled={importing || saving} className={inputClass}
-            placeholder={'2 lbs chicken thighs\n12 eggs\nbagels\nshredded cheddar cheese\nfrozen broccoli'} />
+            placeholder={'chicken thighs\neggs\nbagels\nshredded cheddar cheese\nfrozen broccoli'} />
         </label>
         <button type="submit" disabled={importing || saving || !text.trim() || Boolean(rows?.length)} className={buttonClass}>
           {importing ? 'Extracting items...' : 'Review imported items'}
@@ -109,35 +109,12 @@ export default function InventoryImportReview({ onAdded }: { onAdded: () => Prom
                 <button type="button" onClick={() => setRows((current) => current?.filter((entry) => entry.key !== row.key) ?? null)}
                   className="rounded-md border border-gray-300 px-3 py-2 text-sm hover:bg-gray-50">Remove</button>
               </div>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="grid grid-cols-1 gap-4">
                 <label className="text-sm font-medium">Name *
                   <input className={inputClass} value={row.item.name} required={row.selected}
                     onChange={(event) => updateItem(row.key, { name: event.target.value })} />
                 </label>
-                <label className="text-sm font-medium">Quantity
-                  <input className={inputClass} type="number" min="0" step="any" value={row.quantityText}
-                    onChange={(event) => { const quantityText = event.target.value;
-                      setRows((current) => current?.map((entry) => entry.key === row.key ? { ...entry, quantityText } : entry) ?? null);
-                    }} />
-                </label>
-                <label className="text-sm font-medium">Unit
-                  <input className={inputClass} value={row.item.unit ?? ''} onChange={(event) => updateItem(row.key, { unit: event.target.value || null })} />
-                </label>
-                <label className="text-sm font-medium">Storage location
-                  <select className={inputClass} value={row.item.storage_location ?? ''} onChange={(event) => updateItem(row.key, {
-                    storage_location: (event.target.value || null) as InventoryImportItem['storage_location'],
-                  })}>
-                    <option value="">Not specified</option><option value="pantry">Pantry</option>
-                    <option value="refrigerator">Refrigerator</option><option value="freezer">Freezer</option>
-                  </select>
-                </label>
-                <label className="text-sm font-medium">Category
-                  <input className={inputClass} value={row.item.category ?? ''} onChange={(event) => updateItem(row.key, { category: event.target.value || null })} />
-                </label>
-                <label className="text-sm font-medium">Expiration date
-                  <input className={inputClass} type="date" value={row.item.expiration_date ?? ''} onChange={(event) => updateItem(row.key, { expiration_date: event.target.value || null })} />
-                </label>
-                <label className="text-sm font-medium sm:col-span-2">Note
+                <label className="text-sm font-medium">Note
                   <textarea className={inputClass} rows={2} value={row.item.note ?? ''} onChange={(event) => updateItem(row.key, { note: event.target.value || null })} />
                 </label>
               </div>

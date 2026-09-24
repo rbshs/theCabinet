@@ -26,12 +26,10 @@ function loadRoute(fetchInventory, suggestMeals) {
 
 const inventory = [{
   id: '2c89a5fc-a9d3-421d-9848-a2e1a3e24ad8', name: 'Chicken thighs',
-  quantity: null, unit: null, storage_location: 'refrigerator',
-  category: 'Meat', expiration_date: '2026-10-01', note: 'Quantity unknown',
+  note: null,
 }, {
   id: '66a94385-cc7d-449b-a070-48f35ca4bbd1', name: 'Rice',
-  quantity: 0, unit: 'cups', storage_location: 'pantry',
-  category: 'Grains', expiration_date: null, note: null,
+  note: null,
 }];
 const output = { suggestions: [{
   name: 'Chicken dinner', description: 'Consider a chicken-based dinner.',
@@ -56,7 +54,7 @@ test('fetches current inventory for each request and preserves all context field
   assert.equal(route.dynamic, 'force-dynamic');
   const response = await route.POST(makeRequest({
     userRequest: '  What should I make for dinner?  ',
-    inventory: [{ id: 'client-invented-id', quantity: 999 }],
+    inventory: [{ id: 'client-invented-id', name: 'Invented food' }],
   }));
   assert.equal(response.status, 200);
   assert.equal(response.headers.get('Cache-Control'), 'no-store');
@@ -85,8 +83,8 @@ test('empty inventory returns the response shape without invoking AI', async () 
 
 test('name-only inventory preserves every null metadata field in AI context', async () => {
   const item = {
-    id: inventory[0].id, name: 'Chicken thighs', quantity: null, unit: null,
-    storage_location: null, category: null, expiration_date: null, note: null,
+    id: inventory[0].id, name: 'Chicken thighs',
+    note: null,
   };
   const { POST } = loadRoute(async () => ({ data: [item], error: null }), async (request) => {
     assert.deepEqual(JSON.parse(JSON.stringify(request.inventory)), [item]);

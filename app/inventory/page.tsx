@@ -6,7 +6,7 @@ import {
   updateInventoryItem,
   deleteInventoryItem,
 } from '../../lib/inventory';
-import type { InventoryItem, StorageLocation } from '../../src/types/inventory';
+import type { InventoryItem } from '../../src/types/inventory';
 import AddInventoryForm from './AddInventoryForm';
 
 export default function InventoryPage() {
@@ -15,18 +15,10 @@ export default function InventoryPage() {
   const [inventoryLoading, setInventoryLoading] = useState(true);
   const [inventoryError, setInventoryError] = useState('');
   const [search, setSearch] = useState('');
-  const [storageFilter, setStorageFilter] = useState<StorageLocation | ''>('');
-  const [categoryFilter, setCategoryFilter] = useState('');
 
-  const categories = Array.from(new Set([
-    ...inventoryItems.map((item) => item.category).filter((category): category is string => Boolean(category)),
-    ...(categoryFilter ? [categoryFilter] : []),
-  ]));
   const searchTerm = search.trim().toLowerCase();
   const filteredInventoryItems = inventoryItems.filter((item) =>
-    item.name.toLowerCase().includes(searchTerm) &&
-    (!storageFilter || item.storage_location === storageFilter) &&
-    (!categoryFilter || item.category === categoryFilter)
+    item.name.toLowerCase().includes(searchTerm)
   );
 
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -34,12 +26,6 @@ export default function InventoryPage() {
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
-  const [editQuantity, setEditQuantity] = useState('');
-  const [editUnit, setEditUnit] = useState('');
-  const [editStorageLocation, setEditStorageLocation] =
-    useState<StorageLocation | ''>('');
-  const [editCategory, setEditCategory] = useState('');
-  const [editExpirationDate, setEditExpirationDate] = useState('');
   const [editNote, setEditNote] = useState('');
   const [editLoading, setEditLoading] = useState(false);
   const [editError, setEditError] = useState('');
@@ -66,10 +52,8 @@ export default function InventoryPage() {
   }
 
   async function handleItemsAdded() {
-    // Existing filters must not hide an item the user just added.
+    // The current search must not hide an item the user just added.
     setSearch('');
-    setStorageFilter('');
-    setCategoryFilter('');
     await fetchInventory();
   }
 
@@ -114,11 +98,6 @@ export default function InventoryPage() {
   function startEditing(item: InventoryItem) {
     setEditingId(item.id);
     setEditName(item.name);
-    setEditQuantity(item.quantity !== null ? String(item.quantity) : '');
-    setEditUnit(item.unit ?? '');
-    setEditStorageLocation(item.storage_location ?? '');
-    setEditCategory(item.category ?? '');
-    setEditExpirationDate(item.expiration_date ?? '');
     setEditNote(item.note ?? '');
     setEditError('');
   }
@@ -141,11 +120,6 @@ export default function InventoryPage() {
     try {
       const { data, error } = await updateInventoryItem(itemId, {
         name: editName.trim(),
-        quantity: editQuantity ? Number(editQuantity) : null,
-        unit: editUnit.trim() || null,
-        storage_location: editStorageLocation || null,
-        category: editCategory.trim() || null,
-        expiration_date: editExpirationDate || null,
         note: editNote.trim() || null,
       });
 
@@ -186,7 +160,7 @@ export default function InventoryPage() {
         <AddInventoryForm onAdded={handleItemsAdded} />
       </div>
 
-      <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
+      <div className="mt-4">
         <div>
           <label htmlFor="inventorySearch" className="mb-1 block text-sm font-medium">
             Search food names
@@ -200,49 +174,15 @@ export default function InventoryPage() {
             className="w-full rounded-md border border-gray-300 px-3 py-2"
           />
         </div>
-        <div>
-          <label htmlFor="storageFilter" className="mb-1 block text-sm font-medium">
-            Filter by storage
-          </label>
-          <select
-            id="storageFilter"
-            value={storageFilter}
-            onChange={(e) => setStorageFilter(e.target.value as StorageLocation | '')}
-            className="w-full rounded-md border border-gray-300 px-3 py-2"
-          >
-            <option value="">All locations</option>
-            <option value="pantry">Pantry</option>
-            <option value="refrigerator">Refrigerator</option>
-            <option value="freezer">Freezer</option>
-          </select>
-        </div>
-        <div>
-          <label htmlFor="categoryFilter" className="mb-1 block text-sm font-medium">
-            Filter by category
-          </label>
-          <select
-            id="categoryFilter"
-            value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value)}
-            className="w-full rounded-md border border-gray-300 px-3 py-2"
-          >
-            <option value="">All categories</option>
-            {categories.map((category) => (
-              <option key={category} value={category}>{category}</option>
-            ))}
-          </select>
-        </div>
       </div>
       <button
         type="button"
         onClick={() => {
           setSearch('');
-          setStorageFilter('');
-          setCategoryFilter('');
         }}
         className="mt-4 rounded-md border border-gray-300 px-3 py-2 text-sm font-medium hover:bg-gray-50"
       >
-        Clear filters
+        Clear search
       </button>
 
       {deleteError && (
@@ -276,7 +216,7 @@ export default function InventoryPage() {
         inventoryItems.length > 0 &&
         filteredInventoryItems.length === 0 && (
           <p className="mt-4 text-gray-600">
-            No food items match your filters.
+            No food items match your search.
           </p>
         )}
 
@@ -311,86 +251,6 @@ export default function InventoryPage() {
                         onChange={(e) => setEditName(e.target.value)}
                         className="w-full rounded-md border border-gray-300 px-3 py-2"
                       />
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                      <div>
-                        <label className="mb-1 block text-sm font-medium">
-                          Quantity
-                        </label>
-                        <input
-                          type="number"
-                          min="0"
-                          step="any"
-                          value={editQuantity}
-                          onChange={(e) =>
-                            setEditQuantity(e.target.value)
-                          }
-                          className="w-full rounded-md border border-gray-300 px-3 py-2"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="mb-1 block text-sm font-medium">
-                          Unit
-                        </label>
-                        <input
-                          type="text"
-                          value={editUnit}
-                          onChange={(e) => setEditUnit(e.target.value)}
-                          className="w-full rounded-md border border-gray-300 px-3 py-2"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="mb-1 block text-sm font-medium">
-                          Storage Location
-                        </label>
-                        <select
-                          value={editStorageLocation}
-                          onChange={(e) =>
-                            setEditStorageLocation(
-                              e.target.value as StorageLocation | ''
-                            )
-                          }
-                          className="w-full rounded-md border border-gray-300 px-3 py-2"
-                        >
-                          <option value="">Not specified</option>
-                          <option value="pantry">Pantry</option>
-                          <option value="refrigerator">
-                            Refrigerator
-                          </option>
-                          <option value="freezer">Freezer</option>
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="mb-1 block text-sm font-medium">
-                          Category
-                        </label>
-                        <input
-                          type="text"
-                          value={editCategory}
-                          onChange={(e) =>
-                            setEditCategory(e.target.value)
-                          }
-                          className="w-full rounded-md border border-gray-300 px-3 py-2"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="mb-1 block text-sm font-medium">
-                          Expiration Date
-                        </label>
-                        <input
-                          type="date"
-                          value={editExpirationDate}
-                          onChange={(e) =>
-                            setEditExpirationDate(e.target.value)
-                          }
-                          className="w-full rounded-md border border-gray-300 px-3 py-2"
-                        />
-                      </div>
                     </div>
 
                     <div>
@@ -433,44 +293,6 @@ export default function InventoryPage() {
                       </h3>
 
                       <div className="mt-2 space-y-1 text-sm text-gray-700">
-                        {(item.quantity !== null || item.unit) && (
-                          <p>
-                            <span className="font-medium">
-                              Quantity:
-                            </span>{' '}
-                            {item.quantity !== null
-                              ? item.quantity
-                              : ''}
-                            {item.quantity !== null && item.unit
-                              ? ' '
-                              : ''}
-                            {item.unit ?? ''}
-                          </p>
-                        )}
-
-                        <p>
-                          <span className="font-medium">
-                            Storage:
-                          </span>{' '}
-                          {item.storage_location ?? 'Not specified'}
-                        </p>
-
-                        <p>
-                          <span className="font-medium">
-                            Category:
-                          </span>{' '}
-                          {item.category ?? 'Not specified'}
-                        </p>
-
-                        {item.expiration_date && (
-                          <p>
-                            <span className="font-medium">
-                              Expiration:
-                            </span>{' '}
-                            {item.expiration_date}
-                          </p>
-                        )}
-
                         {item.note && (
                           <p>
                             <span className="font-medium">

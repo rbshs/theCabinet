@@ -18,8 +18,7 @@ export async function POST(request: Request) {
   try {
     const { data, error } = await fetchInventory();
     if (error || data === null) throw new Error('Inventory unavailable.');
-    inventory = data.map(({ id, name, quantity, unit, storage_location, category, expiration_date, note }) =>
-      ({ id, name, quantity, unit, storage_location, category, expiration_date, note }));
+    inventory = data.map(({ id, name, note }) => ({ id, name, note }));
   } catch {
     return NextResponse.json({ error: 'Unable to load your Cabinet inventory. Please try again.' }, { status: 500, headers });
   }

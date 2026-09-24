@@ -5,7 +5,7 @@ type InventoryItemInput = Pick<InventoryItem, 'name'> &
   Partial<Omit<InventoryItem, 'id' | 'name'>>;
 
 const inventoryColumns =
-  'id, name, quantity, unit, storage_location, category, expiration_date, note';
+  'id, name, note';
 
 export async function fetchInventory() {
   return supabase

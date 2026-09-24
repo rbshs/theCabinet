@@ -30,7 +30,7 @@ function load(file, { overrides = {}, globals = {} } = {}) {
 }
 const plain = (value) => JSON.parse(JSON.stringify(value));
 const { validateInventoryImport } = load('services/ai/inventoryImport.ts');
-const item = { name: 'chicken thighs', quantity: 2, unit: 'lb', storage_location: null, category: null, expiration_date: null, note: null };
+const item = { name: 'chicken thighs', note: null };
 const result = { items: [item] };
 const envelope = (content, finish_reason = 'stop') => Response.json({ choices: [{ finish_reason, message: { content } }] });
 const makeRequest = (body) => new Request('http://localhost/api/ai/import-inventory', {
@@ -45,18 +45,17 @@ function route(provider) {
 test('import validator accepts valid items and normalizes omitted metadata without IDs', () => {
   assert.deepEqual(plain(validateInventoryImport(result)), result);
   assert.deepEqual(plain(validateInventoryImport({ items: [{ name: ' bagels ' }] })), {
-    items: [{ ...item, name: 'bagels', quantity: null, unit: null }],
+    items: [{ ...item, name: 'bagels' }],
   });
   assert.deepEqual(plain(validateInventoryImport({ items: [] })), { items: [] });
 });
 
-test('rejects invalid fields, IDs, extra properties, quantities, storage and dates', () => {
+test('rejects invalid fields, IDs, extra properties, removed inventory fields', () => {
   for (const value of [null, [], {}, { items: null }, { items: [], id: 'x' },
     ...[null, [], {}, { name: ' ' }, { ...item, id: 'injected' }, { ...item, recipe: 'x' },
-      { ...item, quantity: '2' }, { ...item, quantity: -1 }, { ...item, quantity: Infinity },
-      { ...item, storage_location: 'cupboard' }, { ...item, unit: 2 }, { ...item, note: {} },
-      { ...item, category: false }, { ...item, expiration_date: '2026-02-30' },
-      { ...item, expiration_date: 'tomorrow' }].map((value) => ({ items: [value] })),
+      { ...item, quantity: 2 }, { ...item, storage_location: null }, { ...item, unit: 'lb' },
+      { ...item, note: {} },
+      { ...item, category: 'Meat' }, { ...item, expiration_date: '2026-10-01' }].map((value) => ({ items: [value] })),
   ]) assert.throws(() => validateInventoryImport(value));
 });
 
@@ -103,6 +102,7 @@ test('local import adapter sends schema-constrained extraction to configured Qwe
       const body = JSON.parse(options.body);
       assert.equal(body.model, 'qwen3-general'); assert.equal(body.stream, false);
       assert.equal(body.response_format.schema.properties.items.items.additionalProperties, false);
+      assert.deepEqual(body.response_format.schema.properties.items.items.required, ['name', 'note']);
       assert.deepEqual(JSON.parse(body.messages[1].content), { text: '2 lbs chicken thighs' });
       return envelope(JSON.stringify(result));
     } },
@@ -130,15 +130,13 @@ test('review saves only selected edited items and never local keys or IDs', asyn
   const { createReviewRows, saveReviewedItems } = load('lib/inventoryImportReview.ts', {
     overrides: { 'lib/inventory.ts': { insertInventoryItem: async (item) => { writes.push(plain(item)); return { error: null }; } } },
   });
-  const rows = createReviewRows([item, { ...item, name: 'bagels', quantity: null }]);
+  const rows = createReviewRows([item, { ...item, name: 'bagels' }]);
   assert.equal(writes.length, 0);
   rows[0].selected = false;
   rows[0].item = { ...rows[0].item, name: '' };
-  rows[0].quantityText = '-1';
-  rows[1].quantityText = '3';
   rows[1].item.name = 'plain bagels';
   await saveReviewedItems(rows, (key) => saved.push(key));
-  assert.deepEqual(writes, [{ ...item, name: 'plain bagels', quantity: 3 }]);
+  assert.deepEqual(writes, [{ ...item, name: 'plain bagels' }]);
   assert.deepEqual(saved, [1]);
   await saveReviewedItems([], () => assert.fail('No selection'));
   assert.equal(writes.length, 1);

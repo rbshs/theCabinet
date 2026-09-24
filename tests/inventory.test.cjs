@@ -29,12 +29,12 @@ function loadInventory(fetch) {
 }
 
 const minimal = {
-  id: 'test-chicken', name: 'Chicken thighs', quantity: null, unit: null,
-  storage_location: null, category: null, expiration_date: null, note: null,
+  id: 'test-chicken', name: 'Chicken thighs',
+  note: null,
 };
 const populated = {
-  id: 'test-rice', name: 'Rice', quantity: 2, unit: 'cups',
-  storage_location: 'pantry', category: 'Grains', expiration_date: '2027-01-01', note: 'Brown rice',
+  id: 'test-rice', name: 'Rice',
+  note: 'Brown rice',
 };
 
 test('name-only insert sends only the supplied name', async () => {
@@ -50,6 +50,7 @@ test('name-only insert sends only the supplied name', async () => {
 test('fetch returns null metadata and populated records unchanged', async () => {
   const api = loadInventory(async (url, options) => {
     assert.equal(options.method, 'GET');
+    assert.equal(new URL(url).searchParams.get('select'), 'id,name,note');
     assert.equal(new URL(url).searchParams.get('order'), 'name.asc');
     return Response.json([minimal, populated]);
   });
