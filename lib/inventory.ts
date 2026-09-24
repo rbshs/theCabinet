@@ -34,3 +34,7 @@ export async function updateInventoryItem(
 export async function deleteInventoryItem(itemId: string) {
   return supabase.from('inventory_items').delete().eq('id', itemId);
 }
+
+export async function clearInventory() {
+  return supabase.from('inventory_items').delete().not('id', 'is', null);
+}

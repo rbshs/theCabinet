@@ -86,3 +86,22 @@ test('delete remains scoped to the requested ID', async () => {
   });
   assert.equal((await api.deleteInventoryItem(minimal.id)).error, null);
 });
+
+test('clear deletes all inventory rows without a search filter', async () => {
+  const api = loadInventory(async (url, options) => {
+    const request = new URL(url);
+    assert.equal(request.pathname, '/rest/v1/inventory_items');
+    assert.equal(options.method, 'DELETE');
+    assert.deepEqual([...request.searchParams], [['id', 'not.is.null']]);
+    return new Response(null, { status: 204 });
+  });
+  assert.equal((await api.clearInventory()).error, null);
+});
+
+test('clear surfaces database errors', async () => {
+  const api = loadInventory(async () => Response.json(
+    { message: 'Permission denied', code: '42501' }, { status: 403 }
+  ));
+  const result = await api.clearInventory();
+  assert.equal(result.error.message, 'Permission denied');
+});

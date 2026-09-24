@@ -5,6 +5,7 @@ import {
   fetchInventory as fetchInventoryItems,
   updateInventoryItem,
   deleteInventoryItem,
+  clearInventory,
 } from '../../lib/inventory';
 import type { InventoryItem } from '../../src/types/inventory';
 import AddInventoryForm from './AddInventoryForm';
@@ -15,6 +16,9 @@ export default function InventoryPage() {
   const [inventoryLoading, setInventoryLoading] = useState(true);
   const [inventoryError, setInventoryError] = useState('');
   const [search, setSearch] = useState('');
+  const [clearing, setClearing] = useState(false);
+  const [clearError, setClearError] = useState('');
+  const [clearSuccess, setClearSuccess] = useState('');
 
   const searchTerm = search.trim().toLowerCase();
   const filteredInventoryItems = inventoryItems.filter((item) =>
@@ -52,6 +56,7 @@ export default function InventoryPage() {
   }
 
   async function handleItemsAdded() {
+    setClearSuccess('');
     // The current search must not hide an item the user just added.
     setSearch('');
     await fetchInventory();
@@ -60,6 +65,41 @@ export default function InventoryPage() {
   useEffect(() => {
     fetchInventory();
   }, []);
+
+  async function handleClearInventory() {
+    if (clearing || inventoryLoading || deletingId || editLoading || !inventoryItems.length) {
+      return;
+    }
+
+    if (!window.confirm(
+      'Clear the entire inventory? This permanently deletes all food items, including items hidden by search. This cannot be undone.'
+    )) {
+      return;
+    }
+
+    setClearing(true);
+    setClearError('');
+    setClearSuccess('');
+    try {
+      const { error } = await clearInventory();
+      if (error) {
+        throw new Error(error.message);
+      }
+      setInventoryItems([]);
+      setSearch('');
+      setEditingId(null);
+      setEditError('');
+      setDeleteError('');
+      setClearSuccess('Inventory cleared.');
+      await fetchInventory();
+    } catch (err) {
+      setClearError(err instanceof Error
+        ? `Failed to clear inventory: ${err.message}`
+        : 'Failed to clear inventory. Please try again.');
+    } finally {
+      setClearing(false);
+    }
+  }
 
   async function handleDelete(itemId: string) {
     const confirmed = window.confirm(
@@ -147,15 +187,24 @@ export default function InventoryPage() {
   }
 
   return (
-    <section className="space-y-4">
-      <div className="flex items-center justify-between gap-4">
+    <fieldset disabled={clearing} aria-busy={clearing} className="min-w-0 space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-2xl font-semibold">Inventory</h1>
+        <div className="flex flex-wrap gap-2">
+        <button type="button" onClick={handleClearInventory}
+          disabled={clearing || inventoryLoading || !!inventoryError || inventoryItems.length === 0 || !!deletingId || editLoading}
+          className="rounded-md border border-red-300 px-4 py-2 font-medium text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50">
+          {clearing ? 'Clearing...' : 'Clear inventory'}
+        </button>
         <button type="button" onClick={() => setAdding((current) => !current)}
           aria-expanded={adding} aria-controls="addInventorySection"
           className="rounded-md bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700">
           {adding ? 'Hide add form' : 'Add Item'}
         </button>
+        </div>
       </div>
+      {clearError && <p role="alert" className="rounded-md border border-red-300 bg-red-50 p-3 text-red-700">{clearError}</p>}
+      {clearSuccess && <p role="status" className="rounded-md border border-green-300 bg-green-50 p-3 text-green-700">{clearSuccess}</p>}
       <div id="addInventorySection" hidden={!adding} className="rounded-lg border border-gray-200 bg-gray-50 p-4">
         <AddInventoryForm onAdded={handleItemsAdded} />
       </div>
@@ -331,6 +380,6 @@ export default function InventoryPage() {
             ))}
           </div>
         )}
-    </section>
+    </fieldset>
   );
 }
